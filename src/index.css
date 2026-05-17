@@ -1,0 +1,84 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-deep: #010102;
+  --bg: #050507;
+  --bg-elevated: #09090c;
+  --surface: #0d0d11;
+  --surface-2: #131319;
+  --surface-inset: #08080a;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.11);
+  --border-glow-violet: rgba(149, 117, 255, 0.35);
+
+  --text: #fafafa;
+  --text-secondary: #e4e4e7;
+  --muted: #888891;
+  --muted-2: #5c5c66;
+
+  --lime: #d4fc38;
+  --lime-mid: #b8ef1a;
+  --lime-glow: rgba(212, 252, 56, 0.45);
+  --lime-soft: rgba(212, 252, 56, 0.11);
+
+  --violet: #9b87ff;
+  --violet-mid: #7c5cff;
+  --violet-deep: #5d3dcf;
+  --violet-soft: rgba(155, 135, 255, 0.14);
+
+  --cyan: #40e9ff;
+  --cyan-soft: rgba(64, 233, 255, 0.12);
+
+  /* Совместимость с маркерами / подсветкой в JSX */
+  --accent: var(--lime);
+  --accent-soft: var(--lime-soft);
+  --success: var(--cyan);
+
+  --warning: #facc15;
+  --danger: #ff5470;
+
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  font-family: var(--font-ui);
+  font-optical-sizing: auto;
+  line-height: 1.48;
+  color: var(--text);
+  background: var(--bg-deep);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(ellipse 140% 100% at 0% -40%, rgba(155, 135, 255, 0.18), transparent 52%),
+    radial-gradient(ellipse 90% 70% at 100% -10%, rgba(64, 233, 255, 0.09), transparent 48%),
+    radial-gradient(ellipse 60% 45% at 55% 110%, rgba(212, 252, 56, 0.07), transparent 42%);
+  background-attachment: fixed;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: rgba(212, 252, 56, 0.28);
+  color: var(--text);
+}
