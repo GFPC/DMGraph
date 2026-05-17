@@ -3,7 +3,7 @@
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.75rem 1.35rem 3.5rem;
+  padding: calc(1.75rem + env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) 3.5rem max(1rem, env(safe-area-inset-left, 0px));
 }
 
 .layout::before {
@@ -282,6 +282,35 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55) inset;
 }
 
+.graph-svg--touch {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.graph-hit {
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-hit:active {
+  cursor: grabbing;
+}
+
+.graph-help {
+  line-height: 1.46;
+}
+
+.graph-toolbar {
+  flex-wrap: wrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .graph-hit:active {
+    cursor: grabbing;
+  }
+}
+
 .node-disk {
   fill: #121216;
   stroke: var(--border-strong);
@@ -291,10 +320,6 @@
     stroke 0.2s ease,
     filter 0.2s ease,
     fill 0.2s ease;
-}
-
-.node-disk:active {
-  cursor: grabbing;
 }
 
 .node-disk.ring {
@@ -765,4 +790,54 @@ input[type='range'] {
   text-decoration-color: rgba(212, 252, 56, 0.5);
   text-underline-offset: 3px;
   cursor: help;
+}
+
+@media (max-width: 639px) {
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: calc(100vw - 2 * max(1rem, env(safe-area-inset-left)));
+    padding-bottom: 0.35rem;
+  }
+
+  .tabs::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn {
+    min-height: 46px;
+  }
+
+  .inline .btn {
+    min-height: 46px;
+  }
+
+  .edges-table-remove .link {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .graph-svg {
+    min-height: min(300px, 44dvh);
+  }
+
+  /* Снижаем случайное увеличение при фокусе в iOS */
+  select,
+  input[type='number'],
+  input[type='text'] {
+    font-size: 16px !important;
+  }
 }

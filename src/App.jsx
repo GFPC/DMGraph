@@ -4,6 +4,8 @@ import './App.css'
 
 const VIEW_W = 920
 const VIEW_H = 460
+/** Отступ от края до центра узла (radius до 40 на таче) */
+const VIEW_MARGIN = 46
 
 function uid(prefix = 'id') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
@@ -27,13 +29,22 @@ const DEFAULT_EDGES = [
 ]
 
 function clientPointToSvg(svg, clientX, clientY) {
-  const pt = svg.createSVGPoint()
-  pt.x = clientX
-  pt.y = clientY
-  const ctm = svg.getScreenCTM()
-  if (!ctm) return { x: 0, y: 0 }
-  const svgP = pt.matrixTransform(ctm.inverse())
-  return { x: svgP.x, y: svgP.y }
+  try {
+    const pt = svg.createSVGPoint()
+    pt.x = clientX
+    pt.y = clientY
+    const ctm = svg.getScreenCTM()
+    if (!ctm) throw new Error('no_ctm')
+    const svgP = pt.matrixTransform(ctm.inverse())
+    return { x: svgP.x, y: svgP.y }
+  } catch {
+    const r = svg.getBoundingClientRect()
+    const vb = svg.viewBox?.baseVal
+    if (!vb || vb.width <= 0 || r.width <= 0) return { x: 0, y: 0 }
+    const x = ((clientX - r.left) / r.width) * vb.width + vb.x
+    const y = ((clientY - r.top) / r.height) * vb.height + vb.y
+    return { x, y }
+  }
 }
 
 function clamp(v, lo, hi) {
@@ -48,7 +59,23 @@ const DEFAULT_POS = {
   assembly: { x: 740, y: 220 },
 }
 
+function useCompactTouchUi() {
+  const [ok, setOk] = useState(false)
+  useEffect(() => {
+    const q = window.matchMedia('(max-width: 639px), (pointer: coarse)')
+    function sync() {
+      setOk(q.matches)
+    }
+    sync()
+    q.addEventListener('change', sync)
+    return () => q.removeEventListener('change', sync)
+  }, [])
+  return ok
+}
+
 export default function App() {
+  const compactTouchUi = useCompactTouchUi()
+
   const [tab, setTab] = useState('app')
   const [nodes, setNodes] = useState(DEFAULT_NODES)
   const [edges, setEdges] = useState(DEFAULT_EDGES)
@@ -65,25 +92,51 @@ export default function App() {
 
   useEffect(() => {
     if (!drag) return
+    const svg = document.getElementById('graph-svg')
+    if (!svg) return
+
+    const { pointerId: pid, captureEl } = drag
+
     function move(ev) {
-      const svg = document.getElementById('graph-svg')
-      if (!svg) return
+      if (ev.pointerId !== pid) return
       const svgP = clientPointToSvg(svg, ev.clientX, ev.clientY)
-      const x = clamp(svgP.x - drag.offsetX, 32, VIEW_W - 32)
-      const y = clamp(svgP.y - drag.offsetY, 32, VIEW_H - 32)
+      const x = clamp(svgP.x - drag.offsetX, VIEW_MARGIN, VIEW_W - VIEW_MARGIN)
+      const y = clamp(svgP.y - drag.offsetY, VIEW_MARGIN, VIEW_H - VIEW_MARGIN)
+      ev.preventDefault()
       setPositions((prev) => ({
         ...prev,
         [drag.id]: { x, y },
       }))
     }
-    function up() {
+
+    function detach() {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+    }
+
+    function end(ev) {
+      if (ev.pointerId !== pid) return
+      detach()
+      try {
+        captureEl.releasePointerCapture?.(pid)
+      } catch {
+        /* ignore */
+      }
       setDrag(null)
     }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
+
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+
     return () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
+      detach()
+      try {
+        captureEl.releasePointerCapture?.(pid)
+      } catch {
+        /* ignore */
+      }
     }
   }, [drag])
 
@@ -134,16 +187,27 @@ export default function App() {
   )
 
   function onPointerDownSvg(e, id) {
-    if (e.button !== 0) return
-    const svg = e.currentTarget.closest('svg')
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+
+    const el = e.currentTarget
+    const svg = el.closest('svg')
     if (!svg) return
     const p = positions[id]
     const svgP = clientPointToSvg(svg, e.clientX, e.clientY)
+    try {
+      el.setPointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+
     setDrag({
       id,
       offsetX: svgP.x - p.x,
       offsetY: svgP.y - p.y,
+      pointerId: e.pointerId,
+      captureEl: el,
     })
+    e.preventDefault()
   }
 
   function addNode() {
@@ -223,6 +287,11 @@ export default function App() {
       : 0
 
   const clampedStep = aug?.length ? Math.min(stepIndex, aug.length - 1) : 0
+
+  const graphNodeRadius = compactTouchUi ? 40 : 30
+  const edgeEndInset = compactTouchUi ? 36 : 28
+  const labelDy = compactTouchUi ? 6 : 5
+  const hintDy = graphNodeRadius + 14
 
   return (
     <div className="layout">
@@ -306,7 +375,7 @@ export default function App() {
         <>
           <div className="grid-main">
             <section className="panel graph-panel">
-              <div className="toolbar">
+              <div className="toolbar graph-toolbar">
                 <span className="badge">Граф</span>
                 <button type="button" className="btn secondary" onClick={() => loadPreset('factory')}>
                   Пример «завод»
@@ -315,7 +384,13 @@ export default function App() {
                   Классический пример S–T
                 </button>
               </div>
-              <svg id="graph-svg" className="graph-svg" viewBox="0 0 920 460" role="img" aria-label="Сеть цехов">
+              <svg
+                id="graph-svg"
+                className={`graph-svg${compactTouchUi ? ' graph-svg--touch' : ''}`}
+                viewBox="0 0 920 460"
+                role="img"
+                aria-label="Сеть цехов — перетаскивайте круги, чтобы расставить узлы"
+              >
                 <defs>
                   <linearGradient id="stepRingStroke" gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={920} y2={460}>
                     <stop offset="0%" stopColor="#40e9ff" />
@@ -337,7 +412,7 @@ export default function App() {
                   const dx = p2.x - p1.x
                   const dy = p2.y - p1.y
                   const len = Math.sqrt(dx * dx + dy * dy) || 1
-                  const r = 28
+                  const r = edgeEndInset
                   const x1 = p1.x + (dx / len) * r
                   const y1 = p1.y + (dy / len) * r
                   const x2 = p2.x - (dx / len) * r
@@ -389,29 +464,48 @@ export default function App() {
                       <circle
                         cx={p.x}
                         cy={p.y}
-                        r={30}
-                        className={`node-disk ${isS ? 'src' : ''} ${isT ? 'snk' : ''} ${ring ? 'ring' : ''}`}
+                        r={graphNodeRadius + 22}
+                        fill="transparent"
+                        stroke="none"
+                        className="graph-hit"
+                        aria-hidden
                         onPointerDown={(ev) => onPointerDownSvg(ev, n.id)}
                       />
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r={graphNodeRadius}
+                        className={`node-disk ${isS ? 'src' : ''} ${isT ? 'snk' : ''} ${ring ? 'ring' : ''}`}
+                        pointerEvents="none"
+                      />
                       {Boolean(stepAug?.path?.length) && ring ? (
-                        <circle cx={p.x} cy={p.y} r={39} fill="none" stroke="url(#stepRingStroke)" strokeWidth="2.5" opacity={0.9} />
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r={graphNodeRadius + 10}
+                          fill="none"
+                          stroke="url(#stepRingStroke)"
+                          strokeWidth="2.5"
+                          opacity={0.9}
+                          pointerEvents="none"
+                        />
                       ) : null}
-                      <text x={p.x} y={p.y + 5} textAnchor="middle" className="node-label">
+                      <text x={p.x} y={p.y + labelDy} textAnchor="middle" className="node-label" pointerEvents="none">
                         {n.label}
                       </text>
                       {isS && isT ? (
-                        <text x={p.x} y={p.y - 42} textAnchor="middle" className="hint">
+                        <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
                           источник = сток
                         </text>
                       ) : (
                         <>
                           {isS ? (
-                            <text x={p.x} y={p.y - 42} textAnchor="middle" className="hint">
+                            <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
                               источник
                             </text>
                           ) : null}
                           {isT ? (
-                            <text x={p.x} y={p.y - 42} textAnchor="middle" className="hint">
+                            <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
                               сток
                             </text>
                           ) : null}
@@ -421,7 +515,11 @@ export default function App() {
                   )
                 })}
               </svg>
-              <p className="muted small">Узлы перетаскиваются мышью. Пропускные способности редактируются в таблице справа.</p>
+              <p className="muted small graph-help">
+                {compactTouchUi
+                  ? 'Перетащите узел большим серым диском: у хит-зоны увеличенный радиус. Ниже — таблицы рёбер; страница не «уезжает», пока двигаете вершину.'
+                  : 'Узлы перетаскиваются мышью. Пропускные способности — в таблице справа.'}
+              </p>
             </section>
 
             <aside className="panel side">
@@ -493,7 +591,9 @@ export default function App() {
                 )}
 
                 <hr className="sep side-sep" />
-                <p className="side-scroll-hint muted small">Списки узлов и рёбер прокручиваются здесь · граф остаётся слева</p>
+                <p className="side-scroll-hint muted small">
+                  Списки ниже можно прокручивать отдельно{compactTouchUi ? '' : ' · граф слева остаётся на экране на ПК'}.
+                </p>
               </div>
 
               <div className="side-scroll" role="region" aria-label="Узлы и рёбра сети">
