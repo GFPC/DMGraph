@@ -76,7 +76,6 @@ function useCompactTouchUi() {
 export default function App() {
   const compactTouchUi = useCompactTouchUi()
 
-  const [tab, setTab] = useState('app')
   const [nodes, setNodes] = useState(DEFAULT_NODES)
   const [edges, setEdges] = useState(DEFAULT_EDGES)
   const [sourceId, setSourceId] = useState('warehouse')
@@ -148,11 +147,11 @@ export default function App() {
     const si = nodeIds.indexOf(sourceId)
     const ti = nodeIds.indexOf(sinkId)
     if (si < 0 || ti < 0) {
-      setResult({ error: 'Укажите корректные источник и сток.' })
+      setResult({ error: 'Invalid s / t' })
       return
     }
     if (si === ti) {
-      setResult({ error: 'Источник и сток не должны совпадать для расчёта потока.' })
+      setResult({ error: 's ≠ t' })
       return
     }
     const { maxFlow, augmentations } = fordFulkerson(caps, si, ti)
@@ -291,97 +290,21 @@ export default function App() {
   const graphNodeRadius = compactTouchUi ? 40 : 30
   const edgeEndInset = compactTouchUi ? 36 : 28
   const labelDy = compactTouchUi ? 6 : 5
-  const hintDy = graphNodeRadius + 14
 
   return (
     <div className="layout">
-      <header className="header">
-        <div>
-          <div className="header-kicker">Max flow · Ford–Fulkerson</div>
-          <h1 className="title">
-            Транспортная сеть цеха ·{' '}
-            <span className="title-accent">максимальный поток</span>
-          </h1>
-          <p className="subtitle">
-            Модель: направленный граф, рёбра — маршруты с ограниченной пропускной способностью. Алгоритм Форда–Фалкерсона
-            (поиск увеличивающего пути в остаточной сети методом{' '}
-            <abbr title="Обход в ширину для полиномиальной сложности">BFS</abbr>, классический вариант Эдмондса–Карпа).
-          </p>
-        </div>
+      <header className="header header--playground">
+        <h1 className="title title-accent">Playground</h1>
       </header>
 
-      <nav className="tabs" aria-label="Разделы">
-        <button type="button" className={tab === 'app' ? 'tab active' : 'tab'} onClick={() => setTab('app')}>
-          Программа
-        </button>
-        <button type="button" className={tab === 'model' ? 'tab active' : 'tab'} onClick={() => setTab('model')}>
-          Модель и алгоритм
-        </button>
-        <button type="button" className={tab === 'lifecycle' ? 'tab active' : 'tab'} onClick={() => setTab('lifecycle')}>
-          Жизненный цикл проекта
-        </button>
-      </nav>
-
-      {tab === 'lifecycle' && (
-        <section className="panel prose">
-          <h2>Итеративная модель (4 фазы)</h2>
-          <ul>
-            <li>
-              <strong>Инициализация</strong> — постановка проблемы, цели темы («максимальный поток в сети от склада к окончательной сборке»),
-              распределение ролей в команде.
-            </li>
-            <li>
-              <strong>Проектирование</strong> — переход от производственного описания к сетевой модели, выбор алгоритма (Форд–Фалкерсон) и средств (React/Vite).
-            </li>
-            <li>
-              <strong>Выполнение</strong> — разработка, тестирование, примеры расчётов, подготовка отчётов и демонстрации.
-            </li>
-            <li>
-              <strong>Применение</strong> — защита, выводы, самооценка результатов и загрузка материалов в ЭОР.
-            </li>
-          </ul>
-          <p className="muted">
-            Промежуточные решения можно уточнять на любом этапе после обратной связи преподавателя и по итогам демонстрации.
-          </p>
-        </section>
-      )}
-
-      {tab === 'model' && (
-        <section className="panel prose">
-          <h2>Математическая модель</h2>
-          <p>
-            Пусть <span className="mono">G = (V, E)</span> — орграф вершин (цехов и склада). Каждому ребру{' '}
-            <span className="mono">(u, v)</span> сопоставлена неотрицательная пропускная способность{' '}
-            <span className="mono">c(u, v)</span>. Из склада задаётся источник <span className="mono">s</span>, цех окончательной
-            сборки — сток <span className="mono">t</span>. Требуется найти значение максимального потока из{' '}
-            <span className="mono">s</span> в <span className="mono">t</span>, не нарушающее ограничения на рёбрах и сохранение
-            потока в промежуточных вершинах.
-          </p>
-          <h3>Обоснование алгоритма</h3>
-          <p>
-            Теорема Форда–Фалкерсона: максимальный поток равен минимальному разрезу; итеративное нахождение увеличивающих путей в остаточной
-            сети сходится к оптимуму при целочисленных пропускных способностях. Поиск пути методом обхода в ширину даёт хорошую предсказуемость
-            по числу шагов на практических сетях и удобен для показа итераций в интерфейсе.
-          </p>
-          <h3>Верификация</h3>
-          <p>
-            После расчёта сравните суммарный исходящий поток от источника (и входящий к стоку) с суммой величин шагов; на графе подсвечивается текущее
-            увеличивающее подмножество рёбер пути на выбранном шаге.
-          </p>
-        </section>
-      )}
-
-      {tab === 'app' && (
-        <>
-          <div className="grid-main">
+      <div className="grid-main">
             <section className="panel graph-panel">
               <div className="toolbar graph-toolbar">
-                <span className="badge">Граф</span>
                 <button type="button" className="btn secondary" onClick={() => loadPreset('factory')}>
-                  Пример «завод»
+                  Завод
                 </button>
                 <button type="button" className="btn secondary" onClick={() => loadPreset('simple')}>
-                  Классический пример S–T
+                  S–T
                 </button>
               </div>
               <svg
@@ -389,7 +312,7 @@ export default function App() {
                 className={`graph-svg${compactTouchUi ? ' graph-svg--touch' : ''}`}
                 viewBox="0 0 920 460"
                 role="img"
-                aria-label="Сеть цехов — перетаскивайте круги, чтобы расставить узлы"
+                aria-label="Graph"
               >
                 <defs>
                   <linearGradient id="stepRingStroke" gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={920} y2={460}>
@@ -493,42 +416,17 @@ export default function App() {
                       <text x={p.x} y={p.y + labelDy} textAnchor="middle" className="node-label" pointerEvents="none">
                         {n.label}
                       </text>
-                      {isS && isT ? (
-                        <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
-                          источник = сток
-                        </text>
-                      ) : (
-                        <>
-                          {isS ? (
-                            <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
-                              источник
-                            </text>
-                          ) : null}
-                          {isT ? (
-                            <text x={p.x} y={p.y - hintDy} textAnchor="middle" className="hint" pointerEvents="none">
-                              сток
-                            </text>
-                          ) : null}
-                        </>
-                      )}
                     </g>
                   )
                 })}
               </svg>
-              <p className="muted small graph-help">
-                {compactTouchUi
-                  ? 'Перетащите узел большим серым диском: у хит-зоны увеличенный радиус. Ниже — таблицы рёбер; страница не «уезжает», пока двигаете вершину.'
-                  : 'Узлы перетаскиваются мышью. Пропускные способности — в таблице справа.'}
-              </p>
             </section>
 
             <aside className="panel side">
               <div className="side-fixed">
-                <h2 className="panel-title">Параметры сети</h2>
-
                 <div className="field-row">
                   <label>
-                    Источник <span className="mono">s</span>
+                    <span className="mono">s</span>
                     <select value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
                       {nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -538,7 +436,7 @@ export default function App() {
                     </select>
                   </label>
                   <label>
-                    Сток <span className="mono">t</span>
+                    <span className="mono">t</span>
                     <select value={sinkId} onChange={(e) => setSinkId(e.target.value)}>
                       {nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -551,7 +449,7 @@ export default function App() {
 
                 <div className="actions">
                   <button type="button" className="btn primary" onClick={run}>
-                    Вычислить max-flow
+                    Run
                   </button>
                 </div>
 
@@ -560,17 +458,13 @@ export default function App() {
                 {result && !result.error && (
                   <div className="result-card">
                     <div className="result-main">
-                      Максимальный поток: <strong className="mono">{result.maxFlow}</strong>
+                      <span className="mono">flow</span> <strong className="mono">{result.maxFlow}</strong>
+                      <span className="muted small"> · {result.augmentations.length} steps</span>
                     </div>
-                    <div className="muted small">Число итераций (увеличивающих путей): {result.augmentations.length}</div>
                     {(aug?.length ?? 0) > 0 && (
                       <>
-                        <label className="step-label">
-                          Шаг аугментации: {clampedStep + 1} / {aug.length}
-                          <span className="mono subtle">
-                            {' '}
-                            · поток шага {stepAug.bottleneck} · нарастающая сумма {cumulativeAfterStep}
-                          </span>
+                        <label className="step-label mono">
+                          {clampedStep + 1}/{aug.length} · +{stepAug.bottleneck} · Σ{cumulativeAfterStep}
                         </label>
                         <input
                           type="range"
@@ -580,7 +474,6 @@ export default function App() {
                           onChange={(e) => setStepIndex(Number(e.target.value))}
                         />
                         <p className="mono path-line">
-                          Путь:{' '}
                           {stepAug.path
                             .map((i) => nodes[i]?.label ?? i)
                             .join(' → ')}
@@ -591,31 +484,26 @@ export default function App() {
                 )}
 
                 <hr className="sep side-sep" />
-                <p className="side-scroll-hint muted small">
-                  Списки ниже можно прокручивать отдельно{compactTouchUi ? '' : ' · граф слева остаётся на экране на ПК'}.
-                </p>
               </div>
 
-              <div className="side-scroll" role="region" aria-label="Узлы и рёбра сети">
-                <h3 className="subsection">Узлы</h3>
+              <div className="side-scroll" role="region" aria-label="Nodes and edges">
                 <div className="inline">
-                  <input placeholder="Название цеха" value={newNodeLabel} onChange={(e) => setNewNodeLabel(e.target.value)} />
+                  <input placeholder="node" value={newNodeLabel} onChange={(e) => setNewNodeLabel(e.target.value)} />
                   <button type="button" className="btn secondary" onClick={addNode}>
-                    Добавить
+                    +
                   </button>
                 </div>
                 <ul className="node-list">
                   {nodes.map((n) => (
                     <li key={n.id}>
                       <span className="mono">{n.label}</span>
-                      <button type="button" className="link danger" onClick={() => removeNode(n.id)}>
-                        удалить
+                      <button type="button" className="link danger" onClick={() => removeNode(n.id)} aria-label="Remove">
+                        ×
                       </button>
                     </li>
                   ))}
                 </ul>
 
-                <h3 className="subsection">Рёбра и пропускная способность</h3>
                 <div className="edge-form">
                   <select value={newEdge.from} onChange={(e) => setNewEdge((x) => ({ ...x, from: e.target.value }))}>
                     <option value="">из…</option>
@@ -640,7 +528,7 @@ export default function App() {
                     onChange={(e) => setNewEdge((x) => ({ ...x, capacity: e.target.value }))}
                   />
                   <button type="button" className="btn secondary" onClick={addEdge}>
-                    Добавить ребро
+                    + edge
                   </button>
                 </div>
 
@@ -692,14 +580,7 @@ export default function App() {
                 </div>
               </div>
             </aside>
-          </div>
-
-          <footer className="panel foot">
-            Для отчётности (*.doc / *.pptx): перенесите тексты разделов «Модель и алгоритм» и «Жизненный цикл», приложите скриншоты пошаговой
-            демонстрации и укажите в списке источников классический учебный материал по потокам (Форд–Фалкерсон, Эдмондс–Карп).
-          </footer>
-        </>
-      )}
+      </div>
     </div>
   )
 }

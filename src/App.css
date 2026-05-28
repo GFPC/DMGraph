@@ -26,6 +26,15 @@
   border-bottom: 1px solid var(--border);
 }
 
+.header--playground {
+  margin-bottom: 1rem;
+  padding-bottom: 0.65rem;
+}
+
+.header--playground .title {
+  margin: 0;
+}
+
 .title {
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 3.3vw, 1.95rem);
