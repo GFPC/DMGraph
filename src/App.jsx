@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { edgesToCapacityMatrix, fordFulkerson } from './lib/fordFulkerson'
+import ModelAndAlgorithms from './sections/ModelAndAlgorithms'
+import ProjectLifecycle from './sections/ProjectLifecycle'
 import './App.css'
 
 const VIEW_W = 920
@@ -76,6 +78,7 @@ function useCompactTouchUi() {
 export default function App() {
   const compactTouchUi = useCompactTouchUi()
 
+  const [tab, setTab] = useState('program')
   const [nodes, setNodes] = useState(DEFAULT_NODES)
   const [edges, setEdges] = useState(DEFAULT_EDGES)
   const [sourceId, setSourceId] = useState('warehouse')
@@ -294,9 +297,26 @@ export default function App() {
   return (
     <div className="layout">
       <header className="header header--playground">
-        <h1 className="title title-accent">Playground</h1>
+        <h1 className="title title-accent">DMGraph</h1>
+        <p className="header-tagline muted">Максимальный поток · Форд–Фалкерсон</p>
       </header>
 
+      <nav className="tabs" aria-label="Разделы отчёта">
+        <button type="button" className={tab === 'program' ? 'tab active' : 'tab'} onClick={() => setTab('program')}>
+          Программа
+        </button>
+        <button type="button" className={tab === 'model' ? 'tab active' : 'tab'} onClick={() => setTab('model')}>
+          Модель и алгоритмы
+        </button>
+        <button type="button" className={tab === 'lifecycle' ? 'tab active' : 'tab'} onClick={() => setTab('lifecycle')}>
+          Жизненный цикл проекта
+        </button>
+      </nav>
+
+      {tab === 'model' && <ModelAndAlgorithms />}
+      {tab === 'lifecycle' && <ProjectLifecycle />}
+
+      {tab === 'program' && (
       <div className="grid-main">
             <section className="panel graph-panel">
               <div className="toolbar graph-toolbar">
@@ -581,6 +601,7 @@ export default function App() {
               </div>
             </aside>
       </div>
+      )}
     </div>
   )
 }
